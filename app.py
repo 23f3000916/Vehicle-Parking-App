@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, render_template, redirect, url_for, request, flash, session
+from flask import Flask, render_template, redirect, url_for, request, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
@@ -495,6 +495,106 @@ def release_spot(reservation_id):
         flash(f'Error releasing spot: {str(e)}', 'danger')
 
     return redirect(url_for('my_reservations'))
+
+# --- API Resources ---
+@app.route('/api/lots', methods=['GET'])
+def api_lots():
+    """
+    API endpoint to get a list of all parking lots.
+    Returns JSON with lot details and spot counts.
+    """
+    lots = ParkingLot.query.all()
+    lot_list = []
+    for lot in lots:
+        total_spots = len(lot.spots)
+        occupied_spots = len([spot for spot in lot.spots if spot.status == 'O'])
+        available_spots = total_spots - occupied_spots
+        lot_list.append({
+            'id': lot.id,
+            'prime_location_name': lot.prime_location_name,
+            'price_per_hour': lot.price_per_hour,
+            'address': lot.address,
+            'pin_code': lot.pin_code,
+            'total_spots': total_spots,
+            'occupied_spots': occupied_spots,
+            'available_spots': available_spots
+        })
+    return jsonify({'parking_lots': lot_list})
+
+@app.route('/api/lots/<int:lot_id>', methods=['GET'])
+def api_lot_details(lot_id):
+    """
+    API endpoint to get details of a single parking lot.
+    Returns JSON with lot details and a list of all its spots.
+    """
+    lot = ParkingLot.query.get_or_404(lot_id)
+    spot_list = []
+    for spot in lot.spots:
+        spot_details = {
+            'id': spot.id,
+            'spot_number': spot.spot_number,
+            'status': 'Available' if spot.status == 'A' else 'Occupied'
+        }
+        if spot.status == 'O':
+            # Add reservation details for occupied spots
+            reservation = ReservedSpot.query.filter_by(spot_id=spot.id, leaving_timestamp=None).first()
+            if reservation:
+                spot_details['occupied_by_user_id'] = reservation.user_id
+                spot_details['parking_timestamp'] = reservation.parking_timestamp.isoformat()
+        spot_list.append(spot_details)
+
+    lot_details = {
+        'id': lot.id,
+        'prime_location_name': lot.prime_location_name,
+        'price_per_hour': lot.price_per_hour,
+        'address': lot.address,
+        'pin_code': lot.pin_code,
+        'total_spots': len(lot.spots),
+        'parking_spots': spot_list
+    }
+    return jsonify(lot_details)
+
+@app.route('/api/spots', methods=['GET'])
+def api_spots():
+    """
+    API endpoint to get a list of all parking spots.
+    Returns JSON with basic spot details.
+    """
+    spots = ParkingSpot.query.all()
+    spot_list = []
+    for spot in spots:
+        spot_list.append({
+            'id': spot.id,
+            'lot_id': spot.lot_id,
+            'spot_number': spot.spot_number,
+            'status': 'Available' if spot.status == 'A' else 'Occupied'
+        })
+    return jsonify({'parking_spots': spot_list})
+
+@app.route('/api/spots/<int:spot_id>', methods=['GET'])
+def api_spot_details(spot_id):
+    """
+    API endpoint to get details of a single parking spot.
+    Returns JSON with spot details and reservation info if occupied.
+    """
+    spot = ParkingSpot.query.get_or_404(spot_id)
+    spot_details = {
+        'id': spot.id,
+        'lot_id': spot.lot_id,
+        'lot_name': spot.parking_lot.prime_location_name,
+        'spot_number': spot.spot_number,
+        'status': 'Available' if spot.status == 'A' else 'Occupied'
+    }
+    if spot.status == 'O':
+        reservation = ReservedSpot.query.filter_by(spot_id=spot.id, leaving_timestamp=None).first()
+        if reservation:
+            spot_details['reservation'] = {
+                'reservation_id': reservation.id,
+                'user_id': reservation.user_id,
+                'user_name': reservation.user.username,
+                'parking_timestamp': reservation.parking_timestamp.isoformat()
+            }
+    return jsonify(spot_details)
 
 
 # --- Database Initialization ---

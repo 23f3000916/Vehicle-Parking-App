@@ -1,3 +1,4 @@
+<!-- templates/admin_dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,10 +31,13 @@
                         <a class="nav-link" href="{{ url_for('admin_view_users') }}">View All Users</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_search_spot') }}">Search Spot</a> <!-- NEW LINK HERE -->
+                        <a class="nav-link" href="{{ url_for('admin_search_spot') }}">Search Spot</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin_dashboard') }}">Summary Charts</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/api/lots">API Docs</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
