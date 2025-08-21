@@ -70,8 +70,13 @@ def login():
             return redirect(url_for('user_dashboard'))
 
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        if not username or not password:
+            flash('Username and password are required.', 'danger')
+            return render_template('login.html')
+
         user = User.query.filter_by(username=username).first()
 
         if user and check_password_hash(user.password, password):
@@ -95,8 +100,13 @@ def register():
             return redirect(url_for('user_dashboard'))
 
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        if not username or not password:
+            flash('Username and password are required.', 'danger')
+            return render_template('register.html')
+
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
         existing_user = User.query.filter_by(username=username).first()
@@ -224,22 +234,36 @@ def admin_search_spot():
 @admin_required
 def add_parking_lot():
     if request.method == 'POST':
-        prime_location_name = request.form['prime_location_name']
-        price_per_hour = float(request.form['price_per_hour'])
-        address = request.form['address']
-        pin_code = request.form['pin_code']
-        maximum_number_of_spots = int(request.form['maximum_number_of_spots'])
+        prime_location_name = request.form.get('prime_location_name')
+        price_per_hour = request.form.get('price_per_hour')
+        address = request.form.get('address')
+        pin_code = request.form.get('pin_code')
+        maximum_number_of_spots = request.form.get('maximum_number_of_spots')
 
-        # Basic validation
-        if not all([prime_location_name, price_per_hour, address, pin_code, maximum_number_of_spots]):
-            flash('All fields are required!', 'danger')
-            return render_template('add_parking_lot.html')
+        # Enhanced backend validation
+        if not prime_location_name or not prime_location_name.strip():
+            flash('Location name is required.', 'danger')
+            return render_template('add_parking_lot.html', **request.form)
+        if not address or not address.strip():
+            flash('Address is required.', 'danger')
+            return render_template('add_parking_lot.html', **request.form)
+        if not pin_code or len(pin_code) != 6 or not pin_code.isdigit():
+            flash('Pin code must be a 6-digit number.', 'danger')
+            return render_template('add_parking_lot.html', **request.form)
+
+        try:
+            price_per_hour = float(price_per_hour)
+            maximum_number_of_spots = int(maximum_number_of_spots)
+        except (ValueError, TypeError):
+            flash('Price and spots must be valid numbers.', 'danger')
+            return render_template('add_parking_lot.html', **request.form)
+
         if price_per_hour <= 0:
             flash('Price per hour must be positive.', 'danger')
-            return render_template('add_parking_lot.html')
+            return render_template('add_parking_lot.html', **request.form)
         if maximum_number_of_spots <= 0:
             flash('Maximum number of spots must be at least 1.', 'danger')
-            return render_template('add_parking_lot.html')
+            return render_template('add_parking_lot.html', **request.form)
 
         try:
             new_lot = ParkingLot(
@@ -272,16 +296,30 @@ def edit_parking_lot(lot_id):
     parking_lot = ParkingLot.query.get_or_404(lot_id)
 
     if request.method == 'POST':
-        new_prime_location_name = request.form['prime_location_name']
-        new_price_per_hour = float(request.form['price_per_hour'])
-        new_address = request.form['address']
-        new_pin_code = request.form['pin_code']
-        new_maximum_number_of_spots = int(request.form['maximum_number_of_spots'])
+        new_prime_location_name = request.form.get('prime_location_name')
+        new_price_per_hour = request.form.get('price_per_hour')
+        new_address = request.form.get('address')
+        new_pin_code = request.form.get('pin_code')
+        new_maximum_number_of_spots = request.form.get('maximum_number_of_spots')
 
-        # Basic validation
-        if not all([new_prime_location_name, new_price_per_hour, new_address, new_pin_code, new_maximum_number_of_spots]):
-            flash('All fields are required!', 'danger')
+        # Enhanced backend validation
+        if not new_prime_location_name or not new_prime_location_name.strip():
+            flash('Location name is required.', 'danger')
             return render_template('edit_parking_lot.html', parking_lot=parking_lot)
+        if not new_address or not new_address.strip():
+            flash('Address is required.', 'danger')
+            return render_template('edit_parking_lot.html', parking_lot=parking_lot)
+        if not new_pin_code or len(new_pin_code) != 6 or not new_pin_code.isdigit():
+            flash('Pin code must be a 6-digit number.', 'danger')
+            return render_template('edit_parking_lot.html', parking_lot=parking_lot)
+
+        try:
+            new_price_per_hour = float(new_price_per_hour)
+            new_maximum_number_of_spots = int(new_maximum_number_of_spots)
+        except (ValueError, TypeError):
+            flash('Price and spots must be valid numbers.', 'danger')
+            return render_template('edit_parking_lot.html', parking_lot=parking_lot)
+
         if new_price_per_hour <= 0:
             flash('Price per hour must be positive.', 'danger')
             return render_template('edit_parking_lot.html', parking_lot=parking_lot)
