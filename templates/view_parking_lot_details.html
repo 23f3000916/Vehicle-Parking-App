@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parking Lot Details - {{ parking_lot.prime_location_name }}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Parking Lot Details</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div class="card-header bg-primary">
+                Parking Lot: {{ parking_lot.prime_location_name }}
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>ID:</strong> {{ parking_lot.id }}</li>
+                <li class="list-group-item"><strong>Address:</strong> {{ parking_lot.address }}, {{ parking_lot.pin_code }}</li>
+                <li class="list-group-item"><strong>Price Per Hour:</strong> ${{ "%.2f"|format(parking_lot.price_per_hour) }}</li>
+                <li class="list-group-item"><strong>Max Spots:</strong> {{ parking_lot.maximum_number_of_spots }}</li>
+                <li class="list-group-item"><strong>Occupied Spots:</strong> {{ parking_lot.spots | selectattr('status', 'equalto', 'O') | list | length }}</li>
+                <li class="list-group-item"><strong>Available Spots:</strong> {{ parking_lot.spots | selectattr('status', 'equalto', 'A') | list | length }}</li>
+            </ul>
+        </div>
+
+        <h2>Parking Spots Status</h2>
+        {% if parking_spots %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Spot Number</th>
+                            <th>Status</th>
+                            <th>Occupied By</th>
+                            <th>Parking Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for spot in parking_spots %}
+                        <tr>
+                            <td>{{ spot.spot_number }}</td>
+                            <td>
+                                {% if spot.status == 'A' %}
+                                    <span class="status-available">Available</span>
+                                {% else %}
+                                    <span class="status-occupied">Occupied</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if spot.status == 'O' and spot.reserved_by_user %}
+                                    {{ spot.reserved_by_user.username }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if spot.status == 'O' and spot.reservation_details %}
+                                    {{ spot.reservation_details.parking_timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-center">No spots defined for this parking lot.</p>
+        {% endif %}
+
+        <a href="{{ url_for('admin_dashboard') }}" class="back-link">Back to Admin Dashboard</a>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

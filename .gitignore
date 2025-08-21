@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+lib/
+lib64/
+local/
+share/
+include/
+bin/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.egg-info/
+.installed.cfg
+*.json
+
+# Flask-specific
+instance/
+.flaskenv
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# OS and IDE files
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db

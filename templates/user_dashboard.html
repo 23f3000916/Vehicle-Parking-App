@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard - Vehicle Parking App</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success container">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('user_dashboard') }}">User Panel</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="{{ url_for('user_dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('my_reservations') }}">My Reservations</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Summary Charts (Coming Soon)</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-red btn-sm" href="{{ url_for('logout') }}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>User Dashboard</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if active_reservation %}
+            <div class="alert alert-info text-center">
+                You currently have an active reservation at <strong>{{ active_reservation.spot.parking_lot.prime_location_name }}</strong>, Spot Number <strong>{{ active_reservation.spot.spot_number }}</strong>.
+                <br>
+                <a href="{{ url_for('my_reservations') }}" class="btn btn-info btn-sm mt-2">View My Active Reservation</a>
+            </div>
+        {% endif %}
+
+        <h2>Available Parking Lots</h2>
+        {% if parking_lots %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Location Name</th>
+                            <th>Address</th>
+                            <th>Price/Hour</th>
+                            <th>Available Spots</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lot in parking_lots %}
+                        {% set available_spots_count = lot.spots | selectattr('status', 'equalto', 'A') | list | length %}
+                        <tr>
+                            <td>{{ lot.prime_location_name }}</td>
+                            <td>{{ lot.address }}, {{ lot.pin_code }}</td>
+                            <td>${{ "%.2f"|format(lot.price_per_hour) }}</td>
+                            <td>{{ available_spots_count }}</td>
+                            <td>
+                                {% if available_spots_count > 0 and not active_reservation %}
+                                    <a href="{{ url_for('book_spot', lot_id=lot.id) }}" class="btn btn-green btn-sm">Book Spot</a>
+                                {% elif active_reservation %}
+                                    <button class="btn btn-secondary btn-sm" disabled>Already have active reservation</button>
+                                {% else %}
+                                    <button class="btn btn-secondary btn-sm" disabled>No Spots Available</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-center">No parking lots available at the moment.</p>
+        {% endif %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
